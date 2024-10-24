@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pitch Stats</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        .blue {
+            color: #0C2340;
+        }
+        .red {
+            color: #BD1F2D;
+        }
+        th { 
+            border-bottom: 1px solid gray;
+            cursor: pointer;
+        }
+        td {
+            text-align: center;
+        }
+        td.left {
+            text-align: left;
+        }
+        a {
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        .sorted-asc::after {
+            content: " ▲";
+        }
+        .sorted-desc::after {
+            content: " ▼";
+        }
+        .summary {
+            font-weight: bold;
+            background-color: #f0f0f0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Trackman Pitch Stats Viewer</h1>
+    <table id="pitchStats">
+        <thead>
+            <tr>
+                <th onclick="sortTable(0)">Pitch ID</th>
+                <th onclick="sortTable(1)">Speed</th>
+                <th onclick="sortTable(2)">Type</th>
+                <th onclick="sortTable(3)">Date</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Data will be populated here -->
+        </tbody>
+        <tfoot>
+            <tr class="summary">
+                <td colspan="1">Mean Speed:</td>
+                <td id="meanSpeed"></td>
+                <td colspan="2"></td>
+            </tr>
+            <tr class="summary">
+                <td colspan="1">Median Speed:</td>
+                <td id="medianSpeed"></td>
+                <td colspan="2"></td>
+            </tr>
+            <tr class="summary">
+                <td colspan="1">Mode Speed:</td>
+                <td id="modeSpeed"></td>
+                <td colspan="2"></td>
+            </tr>
+        </tfoot>
+    </table>
+
+    <script>
+        let currentSort = { column: -1, order: 'asc' };
+        let speeds = [];
+
+        // Fetch data from the URL and populate the table
+        async function fetchData() {
+            try {
+                const response = await fetch('https://compute.samford.edu/zohauth/clients/datajson/1');
+                const data = await response.json();
+
+                const tbody = document.querySelector('#pitchStats tbody');
+                data.forEach(item => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td class="left"><a href="details.html?pitchId=${item.id}">Pitch ${item.id}</a></td>
+                        <td>${item.speed}</td>
+                        <td>${item.result}</td>
+                        <td>${item.datetime}</td>
+                    `;
+                    tbody.appendChild(row);
+                    speeds.push(item.speed); // Collect speeds for calculations
+                });
+
+                calculateStatistics();
+            } catch (error) {
+                console.error('Error fetching data:', error);
+            }
+        }
+
+        function calculateStatistics() {
+            const mean = calculateMean(speeds);
+            const median = calculateMedian(speeds);
+            const mode = calculateMode(speeds);
+
+            document.getElementById('meanSpeed').textContent = mean.toFixed(2);
+            document.getElementById('medianSpeed').textContent = median;
+            document.getElementById('modeSpeed').textContent = mode.join(', ');
+        }
+
+        function calculateMean(arr) {
+            const sum = arr.reduce((acc, val) => acc + val, 0);
+            return sum / arr.length;
+        }
+
+        function calculateMedian(arr) {
+            const sorted = [...arr].sort((a, b) => a - b);
+            const mid = Math.floor(sorted.length / 2);
+            return sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+        }
+
+        function calculateMode(arr) {
+            const frequency = {};
+            arr.forEach(val => {
+                frequency[val] = (frequency[val] || 0) + 1;
+            });
+            const maxFreq = Math.max(...Object.values(frequency));
+            return Object.keys(frequency).filter(key => frequency[key] === maxFreq);
+        }
+
+        function sortTable(columnIndex) {
+            const table = document.getElementById("pitchStats");
+            const tbody = table.tBodies[0];
+            const rows = Array.from(tbody.rows);
+            const isAscending = currentSort.column === columnIndex && currentSort.order === 'asc';
+
+            currentSort = {
+                column: columnIndex,
+                order: isAscending ? 'desc' : 'asc'
+            };
+
+            rows.sort((a, b) => {
+                const aText = a.cells[columnIndex].textContent.trim();
+                const bText = b.cells[columnIndex].textContent.trim();
+                return isAscending ? aText.localeCompare(bText) : bText.localeCompare(aText);
+            });
+
+            // Remove existing sorted class
+            Array.from(table.querySelectorAll('th')).forEach(th => {
+                th.classList.remove('sorted-asc', 'sorted-desc');
+            });
+
+            // Add sorted class to the current header
+            const header = table.querySelectorAll('th')[columnIndex];
+            header.classList.add(isAscending ? 'sorted-desc' : 'sorted-asc');
+
+            // Append sorted rows back to the tbody
+            rows.forEach(row => tbody.appendChild(row));
+        }
+
+        // Call fetchData when the page loads
+        window.onload = fetchData;
+    </script>
+</body>
+</html>
