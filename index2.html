@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pitch Stats</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        .blue {
+            color: #0C2340;
+        }
+        .red {
+            color: #BD1F2D;
+        }
+        th { 
+            border-bottom: 1px solid gray;
+            cursor: pointer;
+        }
+        td {
+            text-align: center;
+        }
+        td.left {
+            text-align: left;
+        }
+        a {
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        .sorted-asc::after {
+            content: " ▲";
+        }
+        .sorted-desc::after {
+            content: " ▼";
+        }
+    </style>
+</head>
+<body>
+    <h1>Trackman Pitch Stats Viewer</h1>
+    <table id="pitchStats">
+        <thead>
+            <tr>
+                <th onclick="sortTable(0)">Pitch ID</th>
+                <th onclick="sortTable(1)">Speed</th>
+                <th onclick="sortTable(2)">Type</th>
+                <th onclick="sortTable(3)">Date</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td class="left"><a href="details.html">Pitch 12345</a></td>
+                <td>95</td>
+                <td>Fastball</td>
+                <td>2024-01-01</td>
+            </tr>
+            <tr>
+                <td class="left"><a href="details.html">Pitch 67890</a></td>
+                <td>87</td>
+                <td>Slider</td>
+                <td>2024-01-02</td>
+            </tr>
+            <!-- Add more rows as needed -->
+        </tbody>
+    </table>
+
+    <script>
+        let currentSort = { column: -1, order: 'asc' };
+
+        function sortTable(columnIndex) {
+            const table = document.getElementById("pitchStats");
+            const tbody = table.tBodies[0];
+            const rows = Array.from(tbody.rows);
+            const isAscending = currentSort.column === columnIndex && currentSort.order === 'asc';
+
+            currentSort = {
+                column: columnIndex,
+                order: isAscending ? 'desc' : 'asc'
+            };
+
+            rows.sort((a, b) => {
+                const aText = a.cells[columnIndex].textContent.trim();
+                const bText = b.cells[columnIndex].textContent.trim();
+                return isAscending ? aText.localeCompare(bText) : bText.localeCompare(aText);
+            });
+
+            // Remove existing sorted class
+            Array.from(table.querySelectorAll('th')).forEach(th => {
+                th.classList.remove('sorted-asc', 'sorted-desc');
+            });
+
+            // Add sorted class to the current header
+            const header = table.querySelectorAll('th')[columnIndex];
+            header.classList.add(isAscending ? 'sorted-desc' : 'sorted-asc');
+
+            // Append sorted rows back to the tbody
+            rows.forEach(row => tbody.appendChild(row));
+        }
+
+        function filterData(event) {
+            event.preventDefault();
+            var startdate = document.getElementById("startdate").value;
+            var enddate = document.getElementById("enddate").value;
+            alert(startdate);
+            alert(enddate);
+        }
+    </script>
+</body>
+</html>
